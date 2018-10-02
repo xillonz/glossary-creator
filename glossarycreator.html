@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Glossary Generator</title>
+    <link rel="stylesheet" href="css/main.css">
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/jszip.min.js"></script>
+    <script src="js/FileSaver.js"></script>
+</head>
+<body>   
+    <div id="glossary" class="page-panel">
+        <h2>Glossary</h2>
+        <p class="empty-list-msg">The current glossary is empty, add some terms or upload an existing glossary</p>
+        <ul id="term-list"></ul>
+    </div>
+    <main>        
+        <div id="upload" class="page-panel">
+            <h1>Glossary Generator</h1>
+            
+            <label for="data" id="data-label" class="btn">Upload Existing Glossary</label>
+            <input type="file" id="data" name="data"  />
+            
+            <div class="form-group">
+                <label for="title">Glossary Title</label>
+                <input class="form-control" type="text" id="title">
+            </div>
+        </div>            
+        <div id="cms" class="page-panel">
+            <h2>Edit Terms</h2> 
+            <form>
+                <input type="hidden" id="entry-id" value="new">
+                <div class="form-group">
+                    <label for="term">Term</label>
+                    <input class="form-control" type="text" id="term">
+                </div>
+                <div class="form-group">
+                    <label for="full-name">Full Name</label>
+                    <input class="form-control" type="text" id="full-name">
+                </div>
+                <div class="form-group">                    
+                    <label for="description">Description</label>
+                    <textarea class="form-control" type="text" id="description"></textarea>
+                    <label for="link-to">Link To</label>
+                    <select name="link-to" id="link-to">
+                        <option value="default" selected disabled>Choose a Term</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="link">Link</label>
+                    <input class="form-control" type="text" id="link">
+                </div>
+                <div class="form-group">
+                    <button type="button" id="save-entry" class="btn btn-primary">Save</button>
+                    <button type="button" id="delete-entry" class="btn btn-danger hide">Delete</button>
+                </div>
+            </form>
+        </div>        
+        <div id="download" class="page-panel">
+            <p>All finished? Download the glossary.</p>
+            <button id="generate" class="btn btn-success">Download</button>  
+        </div>          
+    </main>    
+    <div id="glossary-template" style="display: none;">
+        <html>
+            <head>
+                <title>Silicon Power Glossary</title>
+                <style>
+                    *{
+                        font-family:Arial, Helvetica, sans-serif;
+                    }
+        
+                    body{
+                        background: #e2e1e0;
+                    }
+        
+                    #main{
+                        width: 1100px;
+                        margin: 20px auto;
+                        background: #fff;
+                        border-radius: 2px;
+                        display: block;
+                        padding: 20px;
+                        position: relative;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);    
+                    }
+        
+                    #glossary-search{
+                        margin: 20px 0;
+                        padding: 6px;
+                    }
+        
+                    #glossary-table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        border: 1px solid #ddd;
+                    }
+        
+                    table{
+                        width: 100%;
+                    }
+        
+                    #glossary-table th, #glossary-table td {
+                        text-align: left;
+                        padding: 12px;
+                        font-size: 14px;
+                        overflow: hidden;
+                        max-width: 0;
+                        text-overflow: ellipsis;
+                        line-height: 1.7;
+                    }
+        
+                    #glossary-table tr {
+                        border-bottom: 1px solid #ddd;
+                    }
+        
+                    #glossary-table thead, #glossary-table thead tr:hover{
+                        background-color: #ddd;
+                    }
+        
+                    #glossary-body tr:hover {
+                        background-color: #f1f1f1;
+                    }
+        
+                    .sortable{
+                        position: relative;
+                        cursor: pointer;
+                    }
+        
+                    .sortable::before, .sortable::after{
+                        content: "";
+                        display: table-cell;
+                        position: absolute;                                   
+                        border-left: 5px solid transparent;
+                        border-right: 5px solid transparent;
+                        right: 5px;                
+                    }
+        
+                    .sortable::before{
+                        border-top: 5px solid transparent;
+                        border-bottom: 5px solid #888;
+                        top: 9px;
+                    }
+        
+                    .sortable::after{
+                        border-top: 5px solid #888; 
+                        border-bottom: 5px solid transparent;
+                        top: 21px;
+                    }
+        
+                    .sort-asc::after{
+                        border-top: 5px solid transparent;
+                    }
+
+                    .sort-desc::before{
+                        border-bottom: 5px solid transparent;
+                    }
+
+                    .a{
+                        color: rgb(55, 94, 201);
+                        cursor: pointer;
+                    }
+
+                    a.external-link{
+                        display: block;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin: 7px 0;
+                    }
+                </style>
+            </head>
+            <body id="glossary-body">
+                <main id="main">
+                        <h1 id="glossary-title"></h1>
+                    <div id="search">
+                        <input type="text" id="glossary-search" placeholder="Search for Term" onkeyup="filterTable()">
+                    </div>
+                    <table id="glossary-table" cellspacing="0" cellpadding="0">
+                        <colgroup>
+                            <col span="1" style="width: 15%;">
+                            <col span="1" style="width: 15%;">
+                            <col span="1" style="width: 45%;">
+                            <col span="1" style="width: 25%;">
+                        </colgroup>
+                        <thead>
+                            <th class="sortable" onclick="sortTable(0)">Term</th>
+                            <th class="sortable" onclick="sortTable(1)">Full Name</th>
+                            <th>Description</th>
+                            <th>Link</th>
+                        </thead>
+                        <tbody id="glossary-body"></tbody>
+                    </table>
+                </main>
+                <script>
+                    function filterTable() {
+                        var input, filter, table, tr, td, i;
+                        input = document.getElementById("glossary-search");
+                        filter = input.value.toUpperCase();
+                        table = document.getElementById("glossary-body");
+                        tr = table.getElementsByTagName("tr");
+                        for (i = 0; i < tr.length; i++) {
+                            termTd = tr[i].getElementsByTagName("td")[0];
+                            fullNameTd = tr[i].getElementsByTagName("td")[1];
+                            if (termTd || fullNameTd) {
+                                if (termTd.innerHTML.toUpperCase().indexOf(filter) > -1 || 
+                                    fullNameTd.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                                    tr[i].style.display = "";
+                                } else {
+                                    tr[i].style.display = "none";
+                                }
+                            }       
+                        }
+                    }
+
+                    var termLinks = document.getElementsByClassName("term-link");
+
+                    for (var i = 0; i < termLinks.length; i++) {
+                        termLinks[i].addEventListener('click', function(){
+                            document.getElementById('glossary-search').value = '';
+                            filterTable();
+                        }, false);
+                    }                
+        
+                    function sortTable(n) {
+                        var table, head, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+                        table = document.getElementById("glossary-table");
+                        switching = true;
+                        // Set the sorting direction to ascending:
+                        dir = "asc"; 
+        
+                        head = table.getElementsByTagName("TH")[n];
+        
+                        var elems = document.querySelectorAll(".sortable");
+        
+                        [].forEach.call(elems, function(el) {
+                            el.classList.remove("sort-desc");
+                            el.classList.remove("sort-asc");
+                        });
+        
+                        head.classList.add('sort-asc');
+                        /* Make a loop that will continue until
+                        no switching has been done: */
+                        while (switching) {
+                            // Start by saying: no switching is done:
+                            switching = false;
+                            rows = table.getElementsByTagName("TR");
+                            /* Loop through all table rows (except the
+                            first, which contains table headers): */
+                                for (i = 1; i < (rows.length - 1); i++) {
+                                // Start by saying there should be no switching:
+                                shouldSwitch = false;
+                                /* Get the two elements you want to compare,
+                                one from current row and one from the next: */
+                                x = rows[i].getElementsByTagName("TD")[n];
+                                y = rows[i + 1].getElementsByTagName("TD")[n];
+                                /* Check if the two rows should switch place,
+                                based on the direction, asc or desc: */
+                                if (dir == "asc") {
+                                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                                    // If so, mark as a switch and break the loop:
+                                    shouldSwitch= true;
+                                    break;
+                                    }
+                                } else if (dir == "desc") {
+                                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                                    // If so, mark as a switch and break the loop:
+                                    shouldSwitch= true;
+                                    break;
+                                    }
+                                }
+                            }
+                            if (shouldSwitch) {
+                                /* If a switch has been marked, make the switch
+                                and mark that a switch has been done: */
+                                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                                switching = true;
+                                // Each time a switch is done, increase this count by 1:
+                                switchcount ++; 
+                            } else {
+                                /* If no switching has been done AND the direction is "asc",
+                                set the direction to "desc" and run the while loop again. */
+                                if (switchcount == 0 && dir == "asc") {
+                                    dir = "desc";
+                                    head.classList.remove('sort-asc');
+                                    head.classList.add('sort-desc');
+                                    switching = true;
+                                }
+                            }
+                        }
+                    }
+                </script>
+            </body>
+        </html>
+    </div>
+    <script src="js/main.js"></script>
+    <script>$(function() {gen.init();});</script>
+</body>
+</html>
